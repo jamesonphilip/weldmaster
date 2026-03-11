@@ -306,10 +306,15 @@ export function WeldCanvas({
       {/* Deposited weld bead */}
       {displayBeads.map((seg, i) => {
         const w = getBeadWidth(amperage, travelSpeed);
-        // Polished beads get a shiny silver-grey look, otherwise heat-based color
+        // Polished = silver; quality 1.0 = green; quality 0.5 = normal orange; quality 0 = dull
+        const q = seg.quality ?? 0;
         const color = polished
           ? `rgba(160,155,145,${0.7 + seg.heat * 0.3})`
-          : getBeadColor(seg.heat);
+          : q >= 1.0
+            ? `rgba(40,${Math.round(160 + seg.heat * 60)},60,${0.7 + seg.heat * 0.3})`
+            : q >= 0.5
+              ? getBeadColor(seg.heat)
+              : `rgba(80,55,40,${0.5 + seg.heat * 0.3})`;
         // Good arc/speed = wider brighter bead; bad = thin dark
         return (
           <View key={i} style={{

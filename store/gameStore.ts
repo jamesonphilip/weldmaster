@@ -12,6 +12,7 @@ export interface BeadSegment {
   y: number;
   width: number;
   heat: number; // 0-1
+  quality: number; // 0-1: 1 = good arc + good speed, 0 = bad
   timestamp: number;
   hasDefect: boolean;
   defectType?: DefectEvent['type'];

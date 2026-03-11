@@ -35,6 +35,8 @@ const JOINT_PADDING = 40;
 const JOINT_START_X = JOINT_PADDING;
 const JOINT_END_X = SCREEN_W - JOINT_PADDING;
 const JOINT_LENGTH = JOINT_END_X - JOINT_START_X;
+// Rod tip is offset from handle center by 30° lean over ROD_LEN=80px
+const ROD_TIP_X_OFFSET = Math.round(80 * Math.sin((30 * Math.PI) / 180)); // ~40px
 
 type GamePhase = 'setup' | 'welding' | 'brushing' | 'report';
 
@@ -132,8 +134,9 @@ export default function GameScreen() {
       const arc = store.arcLength;
       const speed = store.travelSpeed;
 
-      // Relative torch X on joint
-      const jointX = Math.max(0, Math.min(JOINT_LENGTH, tx - JOINT_START_X));
+      // Rod tip X is offset from handle by 30° lean; use it for joint tracking
+      const tipX = tx + ROD_TIP_X_OFFSET;
+      const jointX = Math.max(0, Math.min(JOINT_LENGTH, tipX - JOINT_START_X));
       const progress = jointX / JOINT_LENGTH;
 
       // Update heat
@@ -206,14 +209,18 @@ export default function GameScreen() {
         }
       }
 
-      // Deposit bead segment if welding
+      // Deposit bead segment if welding — at rod tip X (not handle X)
       if (welding && moved > 0.5) {
         const w = getBeadWidth(amp, speed);
+        const goodArc = arc >= 0.25 && arc <= 0.75;
+        const goodSpeed = speed > 2 && speed < 200;
+        const quality = (goodArc ? 0.5 : 0) + (goodSpeed ? 0.5 : 0);
         addBeadSegment({
-          x: tx,
+          x: tipX,
           y: JOINT_Y,
           width: w,
           heat: heatAtPos,
+          quality,
           timestamp: Date.now(),
           hasDefect: false,
         });
