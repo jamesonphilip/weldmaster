@@ -1,4 +1,4 @@
-# WeldMaster
+# Bead Runner
 
 A mobile welding simulation game built with React Native + Expo. Learn real welding technique by dragging a virtual electrode across a joint — arc length, travel speed, amperage, and defect detection all modeled after actual welding physics.
 
@@ -10,7 +10,7 @@ A mobile welding simulation game built with React Native + Expo. Learn real weld
 - **Travel speed** is how fast you move across
 - Goal: lay a solid green bead across the full joint — green means both arc and speed are correct
 - After welding, wire brush the slag off before inspection
-- Score is graded on consistency, fusion, defects, and speed
+- Score is graded on coverage, consistency, fusion, defects, and clean run
 
 ## Levels
 
@@ -43,7 +43,7 @@ components/
   WeldCanvas.tsx     — visual renderer (plates, bead, rod, sparks)
   TorchGesture.tsx   — pan gesture handler
   BrushingCanvas.tsx — wire brush mini-game
-  ReportCard.tsx     — post-weld score report
+  ReportCard.tsx     — post-run bead report
   AmperageSlider.tsx — amperage control
   ElectrodeSelector.tsx
 systems/

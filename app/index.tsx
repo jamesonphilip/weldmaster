@@ -42,8 +42,8 @@ export default function MainMenu() {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" backgroundColor="#0d0d0d" />
       <View style={styles.header}>
-        <Text style={styles.logo}>⚡ WELD</Text>
-        <Text style={styles.logoSub}>MASTER</Text>
+        <Text style={styles.logo}>⚡ BEAD</Text>
+        <Text style={styles.logoSub}>RUNNER</Text>
         <Text style={styles.tagline}>JOB BOARD</Text>
       </View>
 
@@ -114,7 +114,7 @@ export default function MainMenu() {
 
         {/* About */}
         <View style={styles.about}>
-          <Text style={styles.aboutTitle}>ABOUT WELDMASTER</Text>
+          <Text style={styles.aboutTitle}>ABOUT BEAD RUNNER</Text>
           <Text style={styles.aboutBody}>
             A welding simulation game that teaches real technique — arc length, travel speed, amperage, and defect recognition modeled after actual welding physics.
           </Text>

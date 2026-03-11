@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "weldmaster",
-    "slug": "weldmaster",
+    "name": "Bead Runner",
+    "slug": "bead-runner",
     "version": "1.0.0",
     "sdkVersion": "54.0.0",
     "orientation": "portrait",
@@ -12,7 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "scheme": "weldmaster",
+    "scheme": "bead-runner",
     "ios": {
       "supportsTablet": true
     },

@@ -32,7 +32,7 @@ export function ReportCard({ score, defects, level, beadSegments, jointStartX, j
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.header}>WELD REPORT</Text>
+      <Text style={styles.header}>BEAD REPORT</Text>
       <Text style={styles.levelName}>{level.name}</Text>
 
       {/* Final weld preview */}
@@ -122,7 +122,7 @@ function WeldPreview({
 
   return (
     <View style={previewStyles.container}>
-      <Text style={previewStyles.label}>YOUR WELD</Text>
+      <Text style={previewStyles.label}>YOUR BEAD</Text>
       <View style={previewStyles.canvas}>
         {/* Plate top */}
         <View style={{ position: 'absolute', left: 0, top: 0, right: 0, height: midY - 2, backgroundColor: '#3a3028' }} />
