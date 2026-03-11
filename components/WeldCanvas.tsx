@@ -277,89 +277,72 @@ export function WeldCanvas({
         }} />
       )}
 
-      {/* === WELDING TOOL (grip at finger position, rod points to joint) === */}
+      {/* === WELDING ROD — pencil style === */}
       {torchX > 0 && (
         <>
-          {/* Lead cable from grip going upward off-screen */}
-          <View style={{
-            position: 'absolute',
-            left: gripX - 2,
-            top: 0,
-            width: 4,
-            height: gripY - 10,
-            backgroundColor: '#0e0e0e',
-            borderRadius: 2,
-          }} />
-
-          {/* Outer flux / sheath on electrode */}
+          {/* Rod shaft — long thin body, rotated from grip to tip */}
           <View style={{
             position: 'absolute',
             left: rodCenterX - rodLen / 2,
-            top: rodCenterY - 5,
+            top: rodCenterY - 4,
             width: rodLen,
-            height: 10,
-            backgroundColor: tool.rodOuter,
-            borderRadius: 5,
-            transform: [{ rotate: `${rodAngleDeg}deg` }],
-          }} />
-
-          {/* Inner metal core */}
-          <View style={{
-            position: 'absolute',
-            left: rodCenterX - (rodLen * 0.86) / 2,
-            top: rodCenterY - 3,
-            width: rodLen * 0.86,
-            height: 6,
+            height: 8,
             backgroundColor: tool.rod,
-            borderRadius: 3,
+            borderRadius: 4,
             transform: [{ rotate: `${rodAngleDeg}deg` }],
           }} />
 
-          {/* Grip body — large enough to fully cover finger */}
+          {/* Taper cap — small oval at the tip, narrows the pencil point */}
           <View style={{
             position: 'absolute',
-            left: gripX - 24,
-            top: gripY - 15,
-            width: 48,
-            height: 30,
-            borderRadius: 7,
+            left: rodTipX - 4,
+            top: rodTipY - 4,
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: tool.rodOuter,
+          }} />
+
+          {/* Grip cap — covers finger at top of rod */}
+          <View style={{
+            position: 'absolute',
+            left: gripX - 10,
+            top: gripY - 10,
+            width: 20,
+            height: 20,
+            borderRadius: 10,
             backgroundColor: tool.gripBody,
             borderWidth: 1,
-            borderColor: '#3a3a3a',
-          }} />
-          {/* Jaw clamp divider stripe */}
-          <View style={{
-            position: 'absolute',
-            left: gripX - 24,
-            top: gripY - 2,
-            width: 48,
-            height: 4,
-            backgroundColor: tool.gripAccent,
-          }} />
-          {/* Grip top highlight */}
-          <View style={{
-            position: 'absolute',
-            left: gripX - 20,
-            top: gripY - 13,
-            width: 40,
-            height: 7,
-            borderRadius: 4,
-            backgroundColor: 'rgba(255,255,255,0.07)',
+            borderColor: '#444',
           }} />
 
-          {/* Electrode tip glow */}
+          {/* Tip glow — the hot sharp point */}
           <View style={{
             position: 'absolute',
-            left: rodTipX - 7,
-            top: rodTipY - 7,
-            width: 14,
-            height: 14,
-            borderRadius: 7,
-            backgroundColor: isWelding ? arcColor : 'rgba(255,210,120,0.25)',
-            opacity: isWelding ? 0.9 : 0.35,
+            left: rodTipX - 6,
+            top: rodTipY - 6,
+            width: 12,
+            height: 12,
+            borderRadius: 6,
+            backgroundColor: isWelding ? arcColor : 'rgba(255,220,80,0.4)',
+            opacity: isWelding ? 1.0 : 0.5,
           }} />
 
-          {/* Arc spark line (tip to work surface) */}
+          {/* Outer glow halo when welding */}
+          {isWelding && (
+            <View style={{
+              position: 'absolute',
+              left: rodTipX - 12,
+              top: rodTipY - 12,
+              width: 24,
+              height: 24,
+              borderRadius: 12,
+              backgroundColor: arcColor,
+              opacity: 0.25,
+            }} />
+          )}
+
+          {/* Arc spark line from tip down to work */}
           {isWelding && (
             <View style={{
               position: 'absolute',
