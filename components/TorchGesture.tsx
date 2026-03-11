@@ -63,10 +63,9 @@ export function TorchGesture({
       const dist = Math.sqrt(dx * dx + dy * dy);
       const speed = dt > 0 ? dist / dt : 0;
 
-      // Arc length: vertical offset from joint, normalized
-      // Ideal (0.5) when finger is ~70px above joint — keeps thumb clear of weld zone
-      const vertOffset = jointY - e.y;
-      const arcLen = Math.max(0, Math.min(1, (vertOffset - 20) / 100));
+      // Arc length: finger BELOW joint controls arc gap
+      // too close = 10px below, ideal = 60px below, too far = 110px below
+      const arcLen = Math.max(0, Math.min(1, (e.y - jointY - 10) / 100));
 
       setTorchPosition(e.x, e.y);
       setArcLength(arcLen);

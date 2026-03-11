@@ -128,24 +128,28 @@ export function WeldCanvas({
   const poolRadius = 6 + amperage / 50;
 
   // --- Rod / tool geometry ---
-  // The GRIP is at the user's finger. The electrode/wire extends DOWN toward the joint.
+  // The GRIP is at the user's finger. The electrode/wire extends UP toward the joint.
   const gripX = torchX;
   const gripY = torchY;
 
-  // Rod tip hovers above joint — gap grows with arc length
-  const arcGapPx = 4 + arcLength * 12;
-  const rodTipY = jointY - arcGapPx;
-  // Slight forward lean so tip is visibly ahead of grip
-  const lean = (rodTipY - gripY) * 0.10;
+  // Fixed-length rod: tip is always ROD_LEN above grip (no length variation with arc)
+  const ROD_LEN = 80;
+  const rodTipY = gripY - ROD_LEN;
+  // Slight forward lean
+  const lean = ROD_LEN * 0.08;
   const rodTipX = gripX + lean;
 
+  // Clamp rod visual tip so rod body never crosses the joint plates
+  const visualTipY = Math.min(rodTipY, jointY - 2);
+  const visualTipX = rodTipX;
+
   // Rotated rod body drawn as a center-positioned rotated View
-  const rdx = rodTipX - gripX;
-  const rdy = rodTipY - gripY;
+  const rdx = visualTipX - gripX;
+  const rdy = visualTipY - gripY;
   const rodLen = Math.sqrt(rdx * rdx + rdy * rdy);
   const rodAngleDeg = Math.atan2(rdy, rdx) * 180 / Math.PI;
-  const rodCenterX = (gripX + rodTipX) / 2;
-  const rodCenterY = (gripY + rodTipY) / 2;
+  const rodCenterX = (gripX + visualTipX) / 2;
+  const rodCenterY = (gripY + visualTipY) / 2;
 
   return (
     <View style={{ width, height, backgroundColor: theme.bg, overflow: 'hidden' }}>
@@ -292,45 +296,47 @@ export function WeldCanvas({
             transform: [{ rotate: `${rodAngleDeg}deg` }],
           }} />
 
-          {/* Taper cap — small oval at the tip, narrows the pencil point */}
+          {/* Taper cap — small oval at the tip */}
           <View style={{
             position: 'absolute',
-            left: rodTipX - 4,
-            top: rodTipY - 4,
+            left: visualTipX - 4,
+            top: visualTipY - 4,
             width: 8,
             height: 8,
             borderRadius: 4,
             backgroundColor: tool.rodOuter,
           }} />
 
-          {/* Grip handle — wide flat bar, easy to hold with thumb */}
+          {/* Grip handle — tall portrait bar along rod direction */}
           <View style={{
             position: 'absolute',
-            left: gripX - 22,
-            top: gripY - 8,
-            width: 44,
-            height: 16,
-            borderRadius: 8,
+            left: gripX - 14,
+            top: gripY - 20,
+            width: 28,
+            height: 42,
+            borderRadius: 10,
             backgroundColor: tool.gripBody,
             borderWidth: 1,
             borderColor: '#555',
           }} />
-          {/* Grip center ridge detail */}
-          <View style={{
-            position: 'absolute',
-            left: gripX - 16,
-            top: gripY - 1,
-            width: 32,
-            height: 2,
-            borderRadius: 1,
-            backgroundColor: 'rgba(255,255,255,0.12)',
-          }} />
+          {/* Grip knurl ridges */}
+          {[0, 1, 2, 3].map((i) => (
+            <View key={i} style={{
+              position: 'absolute',
+              left: gripX - 10,
+              top: gripY - 14 + i * 9,
+              width: 20,
+              height: 2,
+              borderRadius: 1,
+              backgroundColor: 'rgba(255,255,255,0.10)',
+            }} />
+          ))}
 
           {/* Tip glow — the hot sharp point */}
           <View style={{
             position: 'absolute',
-            left: rodTipX - 6,
-            top: rodTipY - 6,
+            left: visualTipX - 6,
+            top: visualTipY - 6,
             width: 12,
             height: 12,
             borderRadius: 6,
@@ -342,8 +348,8 @@ export function WeldCanvas({
           {isWelding && (
             <View style={{
               position: 'absolute',
-              left: rodTipX - 12,
-              top: rodTipY - 12,
+              left: visualTipX - 12,
+              top: visualTipY - 12,
               width: 24,
               height: 24,
               borderRadius: 12,
@@ -352,14 +358,14 @@ export function WeldCanvas({
             }} />
           )}
 
-          {/* Arc spark line from tip down to work */}
+          {/* Arc spark line from tip down to joint surface */}
           {isWelding && (
             <View style={{
               position: 'absolute',
-              left: rodTipX - 1,
-              top: rodTipY,
+              left: visualTipX - 1,
+              top: visualTipY,
               width: 2,
-              height: Math.max(0, jointY - rodTipY),
+              height: Math.max(0, jointY - visualTipY),
               backgroundColor: arcColor,
               opacity: 0.85,
             }} />
