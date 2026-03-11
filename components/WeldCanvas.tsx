@@ -328,6 +328,36 @@ export function WeldCanvas({
         );
       })}
 
+      {/* Spatter marks on plate — rendered for bad-quality bead segments */}
+      {displayBeads.map((seg, i) => {
+        if ((seg.quality ?? 1) >= 0.5) return null;
+        // Two small scatter dots per segment: one on each plate, offset by index for variety
+        const off1 = ((i * 7) % 11) - 5;
+        const off2 = ((i * 13) % 9) - 4;
+        return (
+          <React.Fragment key={`sp-${i}`}>
+            <View style={{
+              position: 'absolute',
+              left: seg.x + off1 - 2,
+              top: jointY - theme.plateH * 0.3 - 3,
+              width: 4,
+              height: 4,
+              borderRadius: 2,
+              backgroundColor: `rgba(120,80,30,${0.35 + (1 - (seg.quality ?? 0)) * 0.35})`,
+            }} />
+            <View style={{
+              position: 'absolute',
+              left: seg.x + off2 - 1,
+              top: jointY + theme.plateH * 0.2 - 2,
+              width: 3,
+              height: 3,
+              borderRadius: 2,
+              backgroundColor: `rgba(120,80,30,${0.3 + (1 - (seg.quality ?? 0)) * 0.3})`,
+            }} />
+          </React.Fragment>
+        );
+      })}
+
       {/* Arc weld pool glow at joint — centered at rod tip X, joint surface Y */}
       {isWelding && torchX > 0 && (
         <View style={{

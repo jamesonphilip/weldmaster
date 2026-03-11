@@ -63,9 +63,13 @@ export function TorchGesture({
       const dist = Math.sqrt(dx * dx + dy * dy);
       const speed = dt > 0 ? dist / dt : 0;
 
-      // Arc length: finger BELOW joint controls arc gap
-      // too close = 10px below, ideal = 60px below, too far = 110px below
-      const arcLen = Math.max(0, Math.min(1, (e.y - jointY - 10) / 100));
+      // Arc length based on actual visual gap between rod tip and joint line
+      // Rod tip Y = e.y - HANDLE_HALF_H - ROD_LEN_Y = e.y - 63 - 69 = e.y - 132
+      // arcGapPx: 0 = tip on joint (too close), ~20 = ideal, 40+ = too far
+      const HANDLE_HALF_H = 63;
+      const ROD_LEN_Y = Math.round(80 * Math.cos(30 * Math.PI / 180)); // ≈ 69
+      const arcGapPx = jointY - (e.y - HANDLE_HALF_H - ROD_LEN_Y);
+      const arcLen = Math.max(0, Math.min(1, arcGapPx / 40));
 
       setTorchPosition(e.x, e.y);
       setArcLength(arcLen);
