@@ -16,6 +16,7 @@ import { LEVELS } from '../../data/levels';
 import { METALS } from '../../data/metals';
 import { useGameStore } from '../../store/gameStore';
 import { WeldCanvas } from '../../components/WeldCanvas';
+import { BrushingCanvas } from '../../components/BrushingCanvas';
 import { TorchGesture } from '../../components/TorchGesture';
 import { AmperageSlider } from '../../components/AmperageSlider';
 import { ElectrodeSelector } from '../../components/ElectrodeSelector';
@@ -35,7 +36,7 @@ const JOINT_START_X = JOINT_PADDING;
 const JOINT_END_X = SCREEN_W - JOINT_PADDING;
 const JOINT_LENGTH = JOINT_END_X - JOINT_START_X;
 
-type GamePhase = 'setup' | 'welding' | 'completed' | 'report';
+type GamePhase = 'setup' | 'welding' | 'brushing' | 'report';
 
 export default function GameScreen() {
   const { levelId } = useLocalSearchParams<{ levelId: string }>();
@@ -100,12 +101,16 @@ export default function GameScreen() {
     tickRef.current = null;
     const state = useGameStore.getState();
     const elapsed = Date.now() - startTimeRef.current;
-    const expectedMs = (JOINT_LENGTH / 5) * 1000; // ~5px/sec reference
+    const expectedMs = (JOINT_LENGTH / 5) * 1000;
     const sc = calculateScore(state.beadSegments, state.defects, level, elapsed, expectedMs);
     setScore(sc);
     completeLevel(level.id, sc.total);
-    setPhase('report');
+    setPhase('brushing'); // wire brush before report
   }, [level, completeLevel]);
+
+  const handleBrushingComplete = useCallback(() => {
+    setPhase('report');
+  }, []);
 
   // Physics tick loop
   useEffect(() => {
@@ -256,6 +261,33 @@ export default function GameScreen() {
     }
   }, [level]);
 
+  if (phase === 'brushing') {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.hud}>
+          <View style={styles.hudCenter}>
+            <Text style={styles.levelTitle}>WIRE BRUSH</Text>
+            <Text style={styles.processLabel}>Clean the slag before inspection</Text>
+          </View>
+        </View>
+        <BrushingCanvas
+          width={SCREEN_W}
+          height={CANVAS_H}
+          jointY={JOINT_Y}
+          jointStartX={JOINT_START_X}
+          jointEndX={JOINT_END_X}
+          beadSegments={beadSegments}
+          amperage={amperage}
+          travelSpeed={travelSpeed}
+          onComplete={handleBrushingComplete}
+        />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ color: '#333', fontSize: 11 }}>Swipe back and forth to clean the weld</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (phase === 'report' && score) {
     return (
       <SafeAreaView style={styles.safe}>
@@ -263,6 +295,11 @@ export default function GameScreen() {
           score={score}
           defects={defects}
           level={level}
+          beadSegments={beadSegments}
+          jointStartX={JOINT_START_X}
+          jointEndX={JOINT_END_X}
+          amperage={amperage}
+          travelSpeed={travelSpeed}
           onNext={handleNext}
           onRetry={handleRetry}
         />
@@ -318,6 +355,19 @@ export default function GameScreen() {
               <Text style={styles.arcGuideLabel}>ARC</Text>
             </View>
           )}
+
+          {/* Real-time quality badge */}
+          {phase === 'welding' && isWelding && (() => {
+            const goodArc = arcLength >= 0.25 && arcLength <= 0.75;
+            const goodSpeed = travelSpeed > 2 && travelSpeed < 200;
+            const quality = goodArc && goodSpeed ? 'GOOD' : !goodArc ? 'ARC!' : 'SPEED!';
+            const qColor = quality === 'GOOD' ? '#00FF88' : '#FF8800';
+            return (
+              <View style={[styles.qualityBadge, { borderColor: qColor }]}>
+                <Text style={[styles.qualityText, { color: qColor }]}>{quality}</Text>
+              </View>
+            );
+          })()}
 
           {/* Progress bar */}
           {phase === 'welding' && (
@@ -475,6 +525,18 @@ const styles = StyleSheet.create({
     borderColor: '#333',
   },
   arcGuideLabel: { color: '#2a2a2a', fontSize: 6, letterSpacing: 1, marginTop: 2 },
+  qualityBadge: {
+    position: 'absolute',
+    left: 10,
+    top: '50%',
+    transform: [{ translateY: -14 }],
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    backgroundColor: '#0d0d0d',
+  },
+  qualityText: { fontSize: 9, fontWeight: '900', letterSpacing: 1 },
   progressBar: {
     position: 'absolute',
     bottom: 0,

@@ -1,8 +1,9 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, StyleSheet, Animated } from 'react-native';
 import { useGameStore } from '../store/gameStore';
 import { getBeadColor, getBeadWidth } from '../systems/beadRenderer';
 import { heatToColor } from '../systems/heatSimulation';
+import type { BeadSegment } from '../store/gameStore';
 
 interface WeldCanvasProps {
   width: number;
@@ -13,6 +14,10 @@ interface WeldCanvasProps {
   levelEnvironment: string;
   jointType: string;
   process: string;
+  /** If provided, renders static bead (report card / brushing preview) */
+  staticBeads?: BeadSegment[];
+  /** Show brushed/polished bead state */
+  polished?: boolean;
 }
 
 interface LevelTheme {
@@ -26,7 +31,6 @@ interface LevelTheme {
 }
 
 function getTheme(environment: string, process: string): LevelTheme {
-  // TIG on pipe → stainless look regardless of env
   if (process === 'TIG') {
     return {
       bg: '#090910',
@@ -69,7 +73,7 @@ function getTheme(environment: string, process: string): LevelTheme {
         jointLineColor: '#111',
         atmosphere: null,
       };
-    default: // outdoor / scrap_yard
+    default:
       return {
         bg: '#0a0908',
         plateTop: '#5c4c3a',
@@ -82,7 +86,6 @@ function getTheme(environment: string, process: string): LevelTheme {
   }
 }
 
-// Tool appearance per welding process
 function getToolColors(process: string) {
   switch (process) {
     case 'MIG':
@@ -92,9 +95,60 @@ function getToolColors(process: string) {
       return { gripBody: '#1c1c32', gripAccent: '#141428', rod: '#aaaacc', rodOuter: '#888888' };
     case 'WET_SMAW':
       return { gripBody: '#0e2030', gripAccent: '#081828', rod: '#c87533', rodOuter: '#7a4515' };
-    default: // SMAW
+    default:
       return { gripBody: '#262626', gripAccent: '#181818', rod: '#c87533', rodOuter: '#7a4010' };
   }
+}
+
+// Spark particle angles (degrees) around the arc tip
+const SPARK_ANGLES_RAD = [0, 40, 80, 130, 170, 210, 260, 310].map((d) => (d * Math.PI) / 180);
+const SPARK_DIST = 28;
+
+function SparkParticles({ x, y, color }: { x: number; y: number; color: string }) {
+  const anims = useRef(SPARK_ANGLES_RAD.map(() => new Animated.Value(0))).current;
+
+  useEffect(() => {
+    const loops = anims.map((anim, i) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(i * 60),
+          Animated.timing(anim, { toValue: 1, duration: 280 + (i % 3) * 60, useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 0, duration: 0, useNativeDriver: true }),
+        ])
+      )
+    );
+    loops.forEach((l) => l.start());
+    return () => loops.forEach((l) => l.stop());
+  }, []);
+
+  return (
+    <>
+      {anims.map((anim, i) => {
+        const dx = Math.cos(SPARK_ANGLES_RAD[i]) * SPARK_DIST;
+        const dy = Math.sin(SPARK_ANGLES_RAD[i]) * SPARK_DIST;
+        const translateX = anim.interpolate({ inputRange: [0, 1], outputRange: [0, dx] });
+        const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [0, dy] });
+        const opacity = anim.interpolate({ inputRange: [0, 0.2, 1], outputRange: [0.9, 0.7, 0] });
+        const scale = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1.2, 0.8, 0.3] });
+        return (
+          <Animated.View
+            key={i}
+            style={{
+              position: 'absolute',
+              left: x - 3,
+              top: y - 3,
+              width: 6,
+              height: 6,
+              borderRadius: 3,
+              backgroundColor: i % 2 === 0 ? color : '#FFFFFF',
+              opacity,
+              transform: [{ translateX }, { translateY }, { scale }],
+            }}
+          />
+        );
+      })}
+    </>
+  );
 }
 
 export function WeldCanvas({
@@ -106,6 +160,8 @@ export function WeldCanvas({
   levelEnvironment,
   jointType,
   process,
+  staticBeads,
+  polished = false,
 }: WeldCanvasProps) {
   const isWelding = useGameStore((s) => s.isWelding);
   const torchX = useGameStore((s) => s.torchX);
@@ -123,38 +179,40 @@ export function WeldCanvas({
   const plateTopY = jointY - theme.plateH;
   const isT = jointType === 'T-joint';
 
-  // Arc glow color: red = too far, orange = too close, yellow = ideal
-  const arcColor = arcLength > 0.7 ? '#FF3300' : arcLength < 0.25 ? '#FF8800' : '#FFDD00';
+  // Arc glow: green = ideal, red = too far, orange = too close
+  const isGoodArc = arcLength >= 0.25 && arcLength <= 0.75;
+  const arcColor = arcLength > 0.7 ? '#FF3300' : arcLength < 0.25 ? '#FF8800' : '#00FF88';
   const poolRadius = 6 + amperage / 50;
 
-  // --- Rod / tool geometry ---
-  // The GRIP is at the user's finger. The electrode/wire extends UP toward the joint.
+  // Weld quality signal (for pool size/brightness)
+  const isGoodSpeed = travelSpeed > 2 && travelSpeed < 200;
+  const qualityGlow = isGoodArc && isGoodSpeed ? 1.4 : 0.7;
+
+  // --- Rod geometry: 30° lean from vertical ---
+  const ROD_LEN = 80;
+  const ANGLE_RAD = (30 * Math.PI) / 180;
   const gripX = torchX;
   const gripY = torchY;
+  const rodTipX = gripX + ROD_LEN * Math.sin(ANGLE_RAD);
+  const rodTipY = gripY - ROD_LEN * Math.cos(ANGLE_RAD);
 
-  // Fixed-length rod: tip is always ROD_LEN above grip (no length variation with arc)
-  const ROD_LEN = 80;
-  const rodTipY = gripY - ROD_LEN;
-  // Slight forward lean
-  const lean = ROD_LEN * 0.08;
-  const rodTipX = gripX + lean;
-
-  // Rod moves as a rigid unit — no clamping
-  const visualTipX = rodTipX;
-  const visualTipY = rodTipY;
-
-  // Rotated rod body drawn as a center-positioned rotated View
-  const rdx = visualTipX - gripX;
-  const rdy = visualTipY - gripY;
+  const rdx = rodTipX - gripX;
+  const rdy = rodTipY - gripY;
   const rodLen = Math.sqrt(rdx * rdx + rdy * rdy);
   const rodAngleDeg = Math.atan2(rdy, rdx) * 180 / Math.PI;
-  const rodCenterX = (gripX + visualTipX) / 2;
-  const rodCenterY = (gripY + visualTipY) / 2;
+  const rodCenterX = (gripX + rodTipX) / 2;
+  const rodCenterY = (gripY + rodTipY) / 2;
+
+  // Arc spark drops from rod tip to joint surface
+  const arcGapH = Math.max(0, jointY - rodTipY);
+
+  // Use static beads for report/brushing view, live beads for gameplay
+  const displayBeads = staticBeads ?? beadSegments;
 
   return (
     <View style={{ width, height, backgroundColor: theme.bg, overflow: 'hidden' }}>
 
-      {/* Atmospheric overlay (indoor fluorescent, underwater depth) */}
+      {/* Atmospheric overlay */}
       {theme.atmosphere && (
         <View style={[StyleSheet.absoluteFillObject, { backgroundColor: theme.atmosphere }]} />
       )}
@@ -162,7 +220,6 @@ export function WeldCanvas({
       {/* === METAL PLATES === */}
       {isT ? (
         <>
-          {/* T-joint: base plate (horizontal, full width) */}
           <View style={{
             position: 'absolute',
             left: jointStartX, top: jointY,
@@ -171,15 +228,12 @@ export function WeldCanvas({
             borderTopWidth: 3, borderTopColor: theme.jointLineColor,
             borderBottomWidth: 1, borderBottomColor: theme.plateHighlight,
           }} />
-          {/* T-joint: top surface of base plate highlight */}
           <View style={{
             position: 'absolute',
             left: jointStartX, top: jointY,
             width: jointW, height: 6,
-            backgroundColor: theme.plateHighlight,
-            opacity: 0.3,
+            backgroundColor: theme.plateHighlight, opacity: 0.3,
           }} />
-          {/* T-joint: vertical web plate */}
           <View style={{
             position: 'absolute',
             left: jointStartX, top: plateTopY - theme.plateH * 0.5,
@@ -188,18 +242,15 @@ export function WeldCanvas({
             borderBottomWidth: 3, borderBottomColor: theme.jointLineColor,
             borderTopWidth: 1, borderTopColor: theme.plateHighlight,
           }} />
-          {/* Web plate surface highlight */}
           <View style={{
             position: 'absolute',
             left: jointStartX, top: plateTopY - theme.plateH * 0.5,
             width: jointW, height: 6,
-            backgroundColor: theme.plateHighlight,
-            opacity: 0.3,
+            backgroundColor: theme.plateHighlight, opacity: 0.3,
           }} />
         </>
       ) : (
         <>
-          {/* Standard butt joint: top plate */}
           <View style={{
             position: 'absolute',
             left: jointStartX, top: plateTopY,
@@ -208,15 +259,12 @@ export function WeldCanvas({
             borderBottomWidth: 2, borderBottomColor: theme.jointLineColor,
             borderTopWidth: 1, borderTopColor: theme.plateHighlight,
           }} />
-          {/* Top plate surface sheen */}
           <View style={{
             position: 'absolute',
             left: jointStartX, top: plateTopY,
             width: jointW, height: 5,
-            backgroundColor: theme.plateHighlight,
-            opacity: 0.25,
+            backgroundColor: theme.plateHighlight, opacity: 0.25,
           }} />
-          {/* Bottom plate */}
           <View style={{
             position: 'absolute',
             left: jointStartX, top: jointY,
@@ -253,8 +301,13 @@ export function WeldCanvas({
       })}
 
       {/* Deposited weld bead */}
-      {beadSegments.map((seg, i) => {
+      {displayBeads.map((seg, i) => {
         const w = getBeadWidth(amperage, travelSpeed);
+        // Polished beads get a shiny silver-grey look, otherwise heat-based color
+        const color = polished
+          ? `rgba(160,155,145,${0.7 + seg.heat * 0.3})`
+          : getBeadColor(seg.heat);
+        // Good arc/speed = wider brighter bead; bad = thin dark
         return (
           <View key={i} style={{
             position: 'absolute',
@@ -262,29 +315,44 @@ export function WeldCanvas({
             top: jointY - w / 2,
             width: 2,
             height: w,
-            backgroundColor: getBeadColor(seg.heat),
+            backgroundColor: color,
           }} />
         );
       })}
 
-      {/* Arc weld pool glow at joint */}
+      {/* Arc weld pool glow at joint — scales with quality */}
       {isWelding && torchX > 0 && (
         <View style={{
           position: 'absolute',
-          left: rodTipX - poolRadius * 2,
-          top: jointY - poolRadius * 2,
-          width: poolRadius * 4,
-          height: poolRadius * 4,
-          borderRadius: poolRadius * 2,
+          left: torchX - poolRadius * 2 * qualityGlow,
+          top: jointY - poolRadius * 2 * qualityGlow,
+          width: poolRadius * 4 * qualityGlow,
+          height: poolRadius * 4 * qualityGlow,
+          borderRadius: poolRadius * 2 * qualityGlow,
           backgroundColor: arcColor,
-          opacity: 0.65,
+          opacity: isGoodArc ? 0.75 : 0.45,
         }} />
       )}
 
-      {/* === WELDING ROD — pencil style === */}
+      {/* Real-time quality ring around pool */}
+      {isWelding && torchX > 0 && (
+        <View style={{
+          position: 'absolute',
+          left: torchX - poolRadius * 3,
+          top: jointY - poolRadius * 3,
+          width: poolRadius * 6,
+          height: poolRadius * 6,
+          borderRadius: poolRadius * 3,
+          borderWidth: 2,
+          borderColor: isGoodArc && isGoodSpeed ? '#00FF88' : '#FF3300',
+          opacity: 0.4,
+        }} />
+      )}
+
+      {/* === WELDING ROD === */}
       {torchX > 0 && (
         <>
-          {/* Rod shaft — long thin body, rotated from grip to tip */}
+          {/* Rod shaft — rotated 30° */}
           <View style={{
             position: 'absolute',
             left: rodCenterX - rodLen / 2,
@@ -296,35 +364,35 @@ export function WeldCanvas({
             transform: [{ rotate: `${rodAngleDeg}deg` }],
           }} />
 
-          {/* Taper cap — small oval at the tip */}
+          {/* Taper tip cap */}
           <View style={{
             position: 'absolute',
-            left: visualTipX - 4,
-            top: visualTipY - 4,
+            left: rodTipX - 4,
+            top: rodTipY - 4,
             width: 8,
             height: 8,
             borderRadius: 4,
             backgroundColor: tool.rodOuter,
           }} />
 
-          {/* Grip handle — tall portrait bar along rod direction */}
+          {/* Grip handle — 3x taller portrait bar */}
           <View style={{
             position: 'absolute',
             left: gripX - 14,
-            top: gripY - 20,
+            top: gripY - 63,
             width: 28,
-            height: 42,
-            borderRadius: 10,
+            height: 126,
+            borderRadius: 12,
             backgroundColor: tool.gripBody,
             borderWidth: 1,
             borderColor: '#555',
           }} />
-          {/* Grip knurl ridges */}
-          {[0, 1, 2, 3].map((i) => (
+          {/* Knurl ridges (10 ridges across full grip) */}
+          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
             <View key={i} style={{
               position: 'absolute',
               left: gripX - 10,
-              top: gripY - 14 + i * 9,
+              top: gripY - 57 + i * 12,
               width: 20,
               height: 2,
               borderRadius: 1,
@@ -332,11 +400,11 @@ export function WeldCanvas({
             }} />
           ))}
 
-          {/* Tip glow — the hot sharp point */}
+          {/* Tip glow */}
           <View style={{
             position: 'absolute',
-            left: visualTipX - 6,
-            top: visualTipY - 6,
+            left: rodTipX - 6,
+            top: rodTipY - 6,
             width: 12,
             height: 12,
             borderRadius: 6,
@@ -344,36 +412,41 @@ export function WeldCanvas({
             opacity: isWelding ? 1.0 : 0.5,
           }} />
 
-          {/* Outer glow halo when welding */}
+          {/* Outer glow halo */}
           {isWelding && (
             <View style={{
               position: 'absolute',
-              left: visualTipX - 12,
-              top: visualTipY - 12,
-              width: 24,
-              height: 24,
-              borderRadius: 12,
+              left: rodTipX - 14,
+              top: rodTipY - 14,
+              width: 28,
+              height: 28,
+              borderRadius: 14,
               backgroundColor: arcColor,
-              opacity: 0.25,
+              opacity: 0.3,
             }} />
           )}
 
-          {/* Arc spark line from tip down to joint surface */}
-          {isWelding && (
+          {/* Arc spark column from tip to joint */}
+          {isWelding && arcGapH > 0 && (
             <View style={{
               position: 'absolute',
-              left: visualTipX - 1,
-              top: visualTipY,
+              left: rodTipX - 1,
+              top: rodTipY,
               width: 2,
-              height: Math.max(0, jointY - visualTipY),
+              height: arcGapH,
               backgroundColor: arcColor,
               opacity: 0.85,
             }} />
           )}
+
+          {/* Spark particles bursting from tip */}
+          {isWelding && (
+            <SparkParticles x={rodTipX} y={rodTipY} color={arcColor} />
+          )}
         </>
       )}
 
-      {/* Underwater bubbles when arc is active */}
+      {/* Underwater bubbles */}
       {levelEnvironment === 'underwater' && isWelding && torchX > 0 && (
         <>
           {[0, 1, 2, 3, 4].map((i) => (

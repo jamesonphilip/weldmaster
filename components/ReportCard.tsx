@@ -1,19 +1,25 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { ScoreBreakdown } from '../systems/scoring';
-import { DefectEvent } from '../store/gameStore';
+import { DefectEvent, BeadSegment } from '../store/gameStore';
 import { DEFECT_LABELS, DEFECT_TIPS } from '../systems/defectDetector';
 import { LevelConfig } from '../data/levels';
+import { getBeadColor, getBeadWidth } from '../systems/beadRenderer';
 
 interface ReportCardProps {
   score: ScoreBreakdown;
   defects: DefectEvent[];
   level: LevelConfig;
+  beadSegments: BeadSegment[];
+  jointStartX: number;
+  jointEndX: number;
+  amperage: number;
+  travelSpeed: number;
   onNext: () => void;
   onRetry: () => void;
 }
 
-export function ReportCard({ score, defects, level, onNext, onRetry }: ReportCardProps) {
+export function ReportCard({ score, defects, level, beadSegments, jointStartX, jointEndX, amperage, travelSpeed, onNext, onRetry }: ReportCardProps) {
   const passed = score.total >= level.passingScore;
 
   const gradeColor =
@@ -28,6 +34,15 @@ export function ReportCard({ score, defects, level, onNext, onRetry }: ReportCar
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.header}>WELD REPORT</Text>
       <Text style={styles.levelName}>{level.name}</Text>
+
+      {/* Final weld preview */}
+      <WeldPreview
+        beadSegments={beadSegments}
+        jointStartX={jointStartX}
+        jointEndX={jointEndX}
+        amperage={amperage}
+        travelSpeed={travelSpeed}
+      />
 
       {/* Grade */}
       <View style={styles.gradeBox}>
@@ -85,6 +100,70 @@ export function ReportCard({ score, defects, level, onNext, onRetry }: ReportCar
     </ScrollView>
   );
 }
+
+function WeldPreview({
+  beadSegments,
+  jointStartX,
+  jointEndX,
+  amperage,
+  travelSpeed,
+}: {
+  beadSegments: BeadSegment[];
+  jointStartX: number;
+  jointEndX: number;
+  amperage: number;
+  travelSpeed: number;
+}) {
+  const PREVIEW_W = 320;
+  const PREVIEW_H = 64;
+  const jointW = jointEndX - jointStartX;
+  const scale = PREVIEW_W / jointW;
+  const midY = PREVIEW_H / 2;
+
+  return (
+    <View style={previewStyles.container}>
+      <Text style={previewStyles.label}>YOUR WELD</Text>
+      <View style={previewStyles.canvas}>
+        {/* Plate top */}
+        <View style={{ position: 'absolute', left: 0, top: 0, right: 0, height: midY - 2, backgroundColor: '#3a3028' }} />
+        {/* Plate bottom */}
+        <View style={{ position: 'absolute', left: 0, top: midY + 2, right: 0, bottom: 0, backgroundColor: '#2a2018' }} />
+        {/* Joint line */}
+        <View style={{ position: 'absolute', left: 0, right: 0, top: midY - 1, height: 2, backgroundColor: '#111' }} />
+        {/* Bead segments — scaled */}
+        {beadSegments.map((seg, i) => {
+          const w = getBeadWidth(amperage, travelSpeed);
+          const sx = (seg.x - jointStartX) * scale;
+          const sw = Math.max(1, 2 * scale);
+          const color = `rgba(180,150,100,${0.6 + seg.heat * 0.4})`;
+          return (
+            <View key={i} style={{
+              position: 'absolute',
+              left: sx,
+              top: midY - w / 2,
+              width: sw,
+              height: w,
+              backgroundColor: color,
+            }} />
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+const previewStyles = StyleSheet.create({
+  container: { marginBottom: 16 },
+  label: { color: '#444', fontSize: 9, letterSpacing: 2, marginBottom: 6, textAlign: 'center' },
+  canvas: {
+    height: 64,
+    backgroundColor: '#0a0908',
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#222',
+  },
+});
 
 function ScoreRow({ label, value, weight }: { label: string; value: number; weight: number }) {
   const color = value >= 80 ? '#00FF88' : value >= 60 ? '#FFCC00' : '#FF3300';
