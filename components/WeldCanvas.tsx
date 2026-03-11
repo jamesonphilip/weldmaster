@@ -303,17 +303,27 @@ export function WeldCanvas({
             backgroundColor: tool.rodOuter,
           }} />
 
-          {/* Grip cap — covers finger at top of rod */}
+          {/* Grip handle — wide flat bar, easy to hold with thumb */}
           <View style={{
             position: 'absolute',
-            left: gripX - 10,
-            top: gripY - 10,
-            width: 20,
-            height: 20,
-            borderRadius: 10,
+            left: gripX - 22,
+            top: gripY - 8,
+            width: 44,
+            height: 16,
+            borderRadius: 8,
             backgroundColor: tool.gripBody,
             borderWidth: 1,
-            borderColor: '#444',
+            borderColor: '#555',
+          }} />
+          {/* Grip center ridge detail */}
+          <View style={{
+            position: 'absolute',
+            left: gripX - 16,
+            top: gripY - 1,
+            width: 32,
+            height: 2,
+            borderRadius: 1,
+            backgroundColor: 'rgba(255,255,255,0.12)',
           }} />
 
           {/* Tip glow — the hot sharp point */}

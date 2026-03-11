@@ -308,6 +308,16 @@ export default function GameScreen() {
             />
           </TorchGesture>
 
+          {/* Arc guide — 3 dots: far / ideal / close */}
+          {phase === 'welding' && (
+            <View style={styles.arcGuide}>
+              <View style={[styles.arcDot, { backgroundColor: arcLength > 0.75 ? '#FF3300' : '#1e1e1e' }]} />
+              <View style={[styles.arcDotLarge, { backgroundColor: arcLength >= 0.25 && arcLength <= 0.75 ? '#00FF88' : '#1e1e1e' }]} />
+              <View style={[styles.arcDot, { backgroundColor: arcLength < 0.25 ? '#FF8800' : '#1e1e1e' }]} />
+              <Text style={styles.arcGuideLabel}>ARC</Text>
+            </View>
+          )}
+
           {/* Progress bar */}
           {phase === 'welding' && (
             <View style={styles.progressBar}>
@@ -355,6 +365,14 @@ export default function GameScreen() {
               <View style={styles.tutorialTextCol}>
                 <Text style={styles.tutorialHead}>Steady Travel Speed</Text>
                 <Text style={styles.tutorialBody}>Move too fast = cold lap. Too slow = burn-through. Find a smooth, steady pace.</Text>
+              </View>
+            </View>
+
+            <View style={styles.tutorialStep}>
+              <Text style={styles.tutorialIcon}>✓</Text>
+              <View style={styles.tutorialTextCol}>
+                <Text style={styles.tutorialHead}>What Good Looks Like</Text>
+                <Text style={styles.tutorialBody}>A clean, even orange-to-gold bead running straight across the joint. Uniform width, no gaps, no scorched edges — like a neat seam of cooled metal.</Text>
               </View>
             </View>
 
@@ -432,6 +450,29 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#1a1a1a',
   },
+  arcGuide: {
+    position: 'absolute',
+    right: 10,
+    top: '50%',
+    transform: [{ translateY: -32 }],
+    alignItems: 'center',
+    gap: 5,
+  },
+  arcDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  arcDotLarge: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  arcGuideLabel: { color: '#2a2a2a', fontSize: 6, letterSpacing: 1, marginTop: 2 },
   progressBar: {
     position: 'absolute',
     bottom: 0,
