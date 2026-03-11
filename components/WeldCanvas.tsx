@@ -132,11 +132,11 @@ export function WeldCanvas({
   const gripX = torchX;
   const gripY = torchY;
 
-  // Rod tip hovers above the joint by an arc-length-dependent gap
-  const arcGapPx = 5 + arcLength * 16;
+  // Rod tip hovers above joint — gap grows with arc length
+  const arcGapPx = 4 + arcLength * 12;
   const rodTipY = jointY - arcGapPx;
-  // Slight forward lean (~13% of vertical distance) like real welding stance
-  const lean = (rodTipY - gripY) * 0.13;
+  // Slight forward lean so tip is visibly ahead of grip
+  const lean = (rodTipY - gripY) * 0.10;
   const rodTipX = gripX + lean;
 
   // Rotated rod body drawn as a center-positioned rotated View

@@ -255,11 +255,6 @@ export default function GameScreen() {
     }
   }, [level]);
 
-  const arcLengthIndicatorColor =
-    arcLength < 0.25 ? '#FF3300' :
-    arcLength > 0.75 ? '#FF8800' :
-    '#00FF88';
-
   if (phase === 'report' && score) {
     return (
       <SafeAreaView style={styles.safe}>
@@ -312,26 +307,6 @@ export default function GameScreen() {
               process={level.process}
             />
           </TorchGesture>
-
-          {/* Arc length indicator bar */}
-          {phase === 'welding' && (
-            <View style={styles.arcBar}>
-              <View style={styles.arcBarTrack}>
-                <View
-                  style={[
-                    styles.arcBarFill,
-                    {
-                      height: `${arcLength * 100}%`,
-                      backgroundColor: arcLengthIndicatorColor,
-                    },
-                  ]}
-                />
-                {/* Ideal zone */}
-                <View style={styles.arcIdealZone} />
-              </View>
-              <Text style={styles.arcBarLabel}>ARC</Text>
-            </View>
-          )}
 
           {/* Progress bar */}
           {phase === 'welding' && (
@@ -457,41 +432,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#1a1a1a',
   },
-  arcBar: {
-    position: 'absolute',
-    right: 8,
-    top: 10,
-    bottom: 10,
-    width: 20,
-    alignItems: 'center',
-  },
-  arcBarTrack: {
-    flex: 1,
-    width: 8,
-    backgroundColor: '#1a1a1a',
-    borderRadius: 4,
-    overflow: 'hidden',
-    justifyContent: 'flex-end',
-    borderWidth: 1,
-    borderColor: '#333',
-    position: 'relative',
-  },
-  arcBarFill: {
-    width: '100%',
-    borderRadius: 4,
-  },
-  arcIdealZone: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: '35%',
-    height: '30%',
-    backgroundColor: 'rgba(0,255,100,0.15)',
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: 'rgba(0,255,100,0.3)',
-  },
-  arcBarLabel: { color: '#333', fontSize: 7, marginTop: 4, letterSpacing: 1 },
   progressBar: {
     position: 'absolute',
     bottom: 0,
