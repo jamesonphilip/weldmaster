@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   StatusBar,
   Animated,
+  ScrollView,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -335,46 +336,47 @@ export default function GameScreen() {
         {showTutorial && (
           <View style={styles.tutorialOverlay}>
             <Text style={styles.tutorialTitle}>HOW TO WELD</Text>
-
-            <View style={styles.tutorialStep}>
-              <Text style={styles.tutorialIcon}>1</Text>
-              <View style={styles.tutorialTextCol}>
-                <Text style={styles.tutorialHead}>Set Amperage</Text>
-                <Text style={styles.tutorialBody}>Use the +/− buttons to dial in the correct amperage for the metal. Stay in the green range.</Text>
+            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+              <View style={styles.tutorialStep}>
+                <Text style={styles.tutorialIcon}>1</Text>
+                <View style={styles.tutorialTextCol}>
+                  <Text style={styles.tutorialHead}>Set Amperage</Text>
+                  <Text style={styles.tutorialBody}>Use the +/− buttons to dial in the correct amperage for the metal. Stay in the green range.</Text>
+                </View>
               </View>
-            </View>
 
-            <View style={styles.tutorialStep}>
-              <Text style={styles.tutorialIcon}>2</Text>
-              <View style={styles.tutorialTextCol}>
-                <Text style={styles.tutorialHead}>Strike the Arc</Text>
-                <Text style={styles.tutorialBody}>Tap STRIKE ARC, then drag the welding rod slowly left to right across the joint.</Text>
+              <View style={styles.tutorialStep}>
+                <Text style={styles.tutorialIcon}>2</Text>
+                <View style={styles.tutorialTextCol}>
+                  <Text style={styles.tutorialHead}>Strike the Arc</Text>
+                  <Text style={styles.tutorialBody}>Tap STRIKE ARC, then drag the welding rod slowly left to right across the joint.</Text>
+                </View>
               </View>
-            </View>
 
-            <View style={styles.tutorialStep}>
-              <Text style={styles.tutorialIcon}>3</Text>
-              <View style={styles.tutorialTextCol}>
-                <Text style={styles.tutorialHead}>Control Arc Length</Text>
-                <Text style={styles.tutorialBody}>Drag slightly ABOVE the joint line for correct arc length. The bar on the right shows your arc — keep it in the green zone.</Text>
+              <View style={styles.tutorialStep}>
+                <Text style={styles.tutorialIcon}>3</Text>
+                <View style={styles.tutorialTextCol}>
+                  <Text style={styles.tutorialHead}>Control Arc Length</Text>
+                  <Text style={styles.tutorialBody}>Hold the grip and drag — keep your finger above the joint. Watch the 3 dots on the right: middle green dot = ideal arc.</Text>
+                </View>
               </View>
-            </View>
 
-            <View style={styles.tutorialStep}>
-              <Text style={styles.tutorialIcon}>4</Text>
-              <View style={styles.tutorialTextCol}>
-                <Text style={styles.tutorialHead}>Steady Travel Speed</Text>
-                <Text style={styles.tutorialBody}>Move too fast = cold lap. Too slow = burn-through. Find a smooth, steady pace.</Text>
+              <View style={styles.tutorialStep}>
+                <Text style={styles.tutorialIcon}>4</Text>
+                <View style={styles.tutorialTextCol}>
+                  <Text style={styles.tutorialHead}>Steady Travel Speed</Text>
+                  <Text style={styles.tutorialBody}>Move too fast = cold lap. Too slow = burn-through. Find a smooth, steady pace.</Text>
+                </View>
               </View>
-            </View>
 
-            <View style={styles.tutorialStep}>
-              <Text style={styles.tutorialIcon}>✓</Text>
-              <View style={styles.tutorialTextCol}>
-                <Text style={styles.tutorialHead}>What Good Looks Like</Text>
-                <Text style={styles.tutorialBody}>A clean, even orange-to-gold bead running straight across the joint. Uniform width, no gaps, no scorched edges — like a neat seam of cooled metal.</Text>
+              <View style={[styles.tutorialStep, { marginBottom: 8 }]}>
+                <Text style={styles.tutorialIcon}>✓</Text>
+                <View style={styles.tutorialTextCol}>
+                  <Text style={styles.tutorialHead}>What Good Looks Like</Text>
+                  <Text style={styles.tutorialBody}>A clean, even orange-to-gold bead running straight across the joint. Uniform width, no gaps, no scorched edges.</Text>
+                </View>
               </View>
-            </View>
+            </ScrollView>
 
             <TouchableOpacity style={styles.tutorialBtn} onPress={() => setShowTutorial(false)}>
               <Text style={styles.tutorialBtnText}>GOT IT — LET'S WELD</Text>
