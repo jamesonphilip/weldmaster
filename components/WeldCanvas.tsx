@@ -188,20 +188,23 @@ export function WeldCanvas({
   const isGoodSpeed = travelSpeed > 2 && travelSpeed < 200;
   const qualityGlow = isGoodArc && isGoodSpeed ? 1.4 : 0.7;
 
-  // --- Rod geometry: 30° lean from vertical ---
+  // --- Rod geometry: exits from TOP of handle at 30° lean ---
   const ROD_LEN = 80;
   const ANGLE_RAD = (30 * Math.PI) / 180;
   const gripX = torchX;
   const gripY = torchY;
-  const rodTipX = gripX + ROD_LEN * Math.sin(ANGLE_RAD);
-  const rodTipY = gripY - ROD_LEN * Math.cos(ANGLE_RAD);
+  const HANDLE_HALF_H = 63; // half of 126px handle
+  const rodBaseX = gripX;
+  const rodBaseY = gripY - HANDLE_HALF_H; // top of handle
+  const rodTipX = rodBaseX + ROD_LEN * Math.sin(ANGLE_RAD);
+  const rodTipY = rodBaseY - ROD_LEN * Math.cos(ANGLE_RAD);
 
-  const rdx = rodTipX - gripX;
-  const rdy = rodTipY - gripY;
+  const rdx = rodTipX - rodBaseX;
+  const rdy = rodTipY - rodBaseY;
   const rodLen = Math.sqrt(rdx * rdx + rdy * rdy);
   const rodAngleDeg = Math.atan2(rdy, rdx) * 180 / Math.PI;
-  const rodCenterX = (gripX + rodTipX) / 2;
-  const rodCenterY = (gripY + rodTipY) / 2;
+  const rodCenterX = (rodBaseX + rodTipX) / 2;
+  const rodCenterY = (rodBaseY + rodTipY) / 2;
 
   // Arc spark drops from rod tip to joint surface
   const arcGapH = Math.max(0, jointY - rodTipY);
@@ -334,20 +337,6 @@ export function WeldCanvas({
         }} />
       )}
 
-      {/* Real-time quality ring around pool */}
-      {isWelding && torchX > 0 && (
-        <View style={{
-          position: 'absolute',
-          left: torchX - poolRadius * 3,
-          top: jointY - poolRadius * 3,
-          width: poolRadius * 6,
-          height: poolRadius * 6,
-          borderRadius: poolRadius * 3,
-          borderWidth: 2,
-          borderColor: isGoodArc && isGoodSpeed ? '#00FF88' : '#FF3300',
-          opacity: 0.4,
-        }} />
-      )}
 
       {/* === WELDING ROD === */}
       {torchX > 0 && (
@@ -412,19 +401,6 @@ export function WeldCanvas({
             opacity: isWelding ? 1.0 : 0.5,
           }} />
 
-          {/* Outer glow halo */}
-          {isWelding && (
-            <View style={{
-              position: 'absolute',
-              left: rodTipX - 14,
-              top: rodTipY - 14,
-              width: 28,
-              height: 28,
-              borderRadius: 14,
-              backgroundColor: arcColor,
-              opacity: 0.3,
-            }} />
-          )}
 
           {/* Arc spark column from tip to joint */}
           {isWelding && arcGapH > 0 && (
