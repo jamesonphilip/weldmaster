@@ -308,6 +308,8 @@ export default function GameScreen() {
               jointStartX={JOINT_START_X}
               jointEndX={JOINT_END_X}
               levelEnvironment={level.environment}
+              jointType={level.jointType}
+              process={level.process}
             />
           </TorchGesture>
 
