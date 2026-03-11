@@ -49,10 +49,13 @@ export function AmperageSlider({ min, max }: AmperageSliderProps) {
         <Text style={[styles.value, { color: inRange ? '#FF8C00' : '#FF3300' }]}>
           {amperage}A
         </Text>
-        <Text style={styles.range}>
-          ({min}–{max}A)
+        <Text style={[styles.range, { color: inRange ? '#555' : '#FF3300' }]}>
+          {inRange ? `sweet spot: ${min}–${max}A` : amperage < min ? 'TOO LOW — weak fusion' : 'TOO HIGH — burn-through risk'}
         </Text>
       </View>
+      <Text style={styles.tip}>
+        Start at {Math.round((min + max) / 2)}A · Low = cold weld · High = blow-through
+      </Text>
     </View>
   );
 }
@@ -129,7 +132,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   range: {
-    color: '#555',
     fontSize: 11,
+  },
+  tip: {
+    color: '#444',
+    fontSize: 10,
+    marginTop: 6,
+    fontStyle: 'italic',
   },
 });

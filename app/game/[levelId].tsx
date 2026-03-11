@@ -363,15 +363,24 @@ export default function GameScreen() {
             </View>
           )}
 
-          {/* Real-time quality badge */}
-          {phase === 'welding' && isWelding && (() => {
-            const goodArc = arcLength >= 0.25 && arcLength <= 0.75;
+          {/* Speed gauge */}
+          {phase === 'welding' && (() => {
+            // Map travelSpeed (0–300 px/s) to gauge 0–1; ideal = 2–200
+            const norm = Math.min(1, travelSpeed / 300);
             const goodSpeed = travelSpeed > 2 && travelSpeed < 200;
-            const quality = goodArc && goodSpeed ? 'GOOD' : !goodArc ? 'ARC!' : 'SPEED!';
-            const qColor = quality === 'GOOD' ? '#00FF88' : '#FF8800';
+            const tooSlow = travelSpeed <= 2;
+            const gaugeColor = goodSpeed ? '#00FF88' : tooSlow ? '#FF8800' : '#FF3300';
+            const label = goodSpeed ? 'SPEED OK' : tooSlow ? 'TOO SLOW' : 'TOO FAST';
             return (
-              <View style={[styles.qualityBadge, { borderColor: qColor }]}>
-                <Text style={[styles.qualityText, { color: qColor }]}>{quality}</Text>
+              <View style={styles.speedGauge}>
+                <Text style={styles.speedLabel}>SPEED</Text>
+                <View style={styles.speedTrack}>
+                  {/* Ideal zone band */}
+                  <View style={styles.speedIdealZone} />
+                  {/* Indicator bar */}
+                  <View style={[styles.speedFill, { width: `${norm * 100}%`, backgroundColor: gaugeColor }]} />
+                </View>
+                <Text style={[styles.speedStatus, { color: gaugeColor }]}>{label}</Text>
               </View>
             );
           })()}
@@ -455,6 +464,14 @@ export default function GameScreen() {
               <Text style={styles.metaItem}>Gas: {level.shieldingGas}</Text>
               <Text style={styles.metaItem}>Env: {level.environment.replace(/_/g, ' ').toUpperCase()}</Text>
             </View>
+            {/* Beginner tip */}
+            <View style={styles.beginnerTip}>
+              <Text style={styles.tipTitle}>QUICK START</Text>
+              <Text style={styles.tipBody}>
+                Set amperage to <Text style={styles.tipHighlight}>{Math.round((level.amperageRange[0] + level.amperageRange[1]) / 2)}A</Text> (middle of the range). Strike the arc, then drag your finger <Text style={styles.tipHighlight}>left → right</Text> slowly and steadily. Keep the <Text style={styles.tipHighlight}>middle green dot</Text> lit on the arc guide.{'\n'}
+                Goal: lay a solid green bead across the full joint.
+              </Text>
+            </View>
             <TouchableOpacity style={styles.strikeBtn} onPress={handleStrikeArc}>
               <Text style={styles.strikeBtnText}>⚡ STRIKE ARC</Text>
             </TouchableOpacity>
@@ -532,18 +549,40 @@ const styles = StyleSheet.create({
     borderColor: '#333',
   },
   arcGuideLabel: { color: '#2a2a2a', fontSize: 6, letterSpacing: 1, marginTop: 2 },
-  qualityBadge: {
+  speedGauge: {
     position: 'absolute',
     left: 10,
     top: '50%',
-    transform: [{ translateY: -14 }],
-    borderWidth: 1,
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    backgroundColor: '#0d0d0d',
+    transform: [{ translateY: -22 }],
+    width: 72,
+    alignItems: 'center',
+    gap: 3,
   },
-  qualityText: { fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  speedLabel: { color: '#444', fontSize: 7, fontWeight: '700', letterSpacing: 1 },
+  speedTrack: {
+    width: '100%',
+    height: 6,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 3,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  speedIdealZone: {
+    position: 'absolute',
+    // ideal = 2–200 px/s out of 300 → ~0.7%–66.7% of the bar
+    left: '1%',
+    width: '65%',
+    height: '100%',
+    backgroundColor: 'rgba(0,255,136,0.12)',
+  },
+  speedFill: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    height: '100%',
+    borderRadius: 3,
+  },
+  speedStatus: { fontSize: 8, fontWeight: '900', letterSpacing: 1 },
   progressBar: {
     position: 'absolute',
     bottom: 0,
@@ -612,6 +651,16 @@ const styles = StyleSheet.create({
   },
   stopBtnText: { color: '#888', fontSize: 12, fontWeight: '700', letterSpacing: 2 },
   weldInstruct: { color: '#2a2a2a', fontSize: 10, textAlign: 'center' },
+  beginnerTip: {
+    backgroundColor: '#101810',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#1a3020',
+  },
+  tipTitle: { color: '#336633', fontSize: 9, fontWeight: '700', letterSpacing: 2, marginBottom: 6 },
+  tipBody: { color: '#557755', fontSize: 12, lineHeight: 18 },
+  tipHighlight: { color: '#00BB66', fontWeight: '700' },
   tutorialOverlay: { flex: 1, backgroundColor: '#0d0d0d', padding: 20, gap: 16 },
   tutorialTitle: { color: '#FF8C00', fontSize: 13, fontWeight: '900', letterSpacing: 3, textAlign: 'center', marginBottom: 4 },
   tutorialStep: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
